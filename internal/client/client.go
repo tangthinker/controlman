@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 )
 
 type Client struct {
-	socketPath string
+	conn net.Conn
 }
 
 type Command struct {
@@ -26,29 +24,21 @@ type Response struct {
 }
 
 func NewClient() (*Client, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		socketPath: filepath.Join(homeDir, ".controlman", "controlman.sock"),
-	}, nil
-}
-
-func (c *Client) sendCommand(cmd Command) (*Response, error) {
-	conn, err := net.Dial("unix", c.socketPath)
+	socketPath := "/var/run/controlman/controlman.sock"
+	conn, err := net.Dial("unix", socketPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to daemon: %v", err)
 	}
-	defer conn.Close()
+	return &Client{conn: conn}, nil
+}
 
-	if err := json.NewEncoder(conn).Encode(cmd); err != nil {
+func (c *Client) sendCommand(cmd Command) (*Response, error) {
+	if err := json.NewEncoder(c.conn).Encode(cmd); err != nil {
 		return nil, fmt.Errorf("failed to send command: %v", err)
 	}
 
 	var response Response
-	if err := json.NewDecoder(conn).Decode(&response); err != nil {
+	if err := json.NewDecoder(c.conn).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to read response: %v", err)
 	}
 

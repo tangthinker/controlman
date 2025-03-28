@@ -16,6 +16,9 @@ install: build
 	sudo install -m 755 $(BINARY_NAME) $(INSTALL_DIR)
 	# 创建配置目录
 	sudo mkdir -p $(USER_HOME)/.controlman
+	# 创建socket目录
+	sudo mkdir -p /var/run/controlman
+	sudo chmod 755 /var/run/controlman
 	# 安装systemd服务文件
 	sudo install -m 644 controlman.service $(SERVICE_DIR)
 	# 重新加载systemd
@@ -34,6 +37,8 @@ uninstall:
 	sudo rm -f $(INSTALL_DIR)/$(BINARY_NAME)
 	# 删除配置目录
 	sudo rm -rf $(USER_HOME)/.controlman
+	# 删除socket目录
+	sudo rm -rf /var/run/controlman
 	# 重新加载systemd
 	sudo systemctl daemon-reload
 

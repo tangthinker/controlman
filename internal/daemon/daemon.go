@@ -33,12 +33,12 @@ type Response struct {
 }
 
 func NewDaemon() (*Daemon, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
+	// 创建 /var/run/controlman 目录
+	if err := os.MkdirAll("/var/run/controlman", 0755); err != nil {
+		log.Fatalf("Failed to create socket directory: %v", err)
 	}
 
-	socketPath := filepath.Join(homeDir, ".controlman", "controlman.sock")
+	socketPath := "/var/run/controlman/controlman.sock"
 	serviceManager, err := service.NewServiceManager()
 	if err != nil {
 		return nil, err

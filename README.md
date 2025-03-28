@@ -42,20 +42,22 @@ ControlMan 守护进程会作为系统服务自动运行。你可以使用以下
 
 ```bash
 # 查看服务状态
-sudo systemctl status controlman
+sudo systemctl status controlman@$USER
 
 # 启动服务
-sudo systemctl start controlman
+sudo systemctl start controlman@$USER
 
 # 停止服务
-sudo systemctl stop controlman
+sudo systemctl stop controlman@$USER
 
 # 重启服务
-sudo systemctl restart controlman
+sudo systemctl restart controlman@$USER
 
 # 查看日志
-sudo journalctl -u controlman
+sudo journalctl -u controlman@$USER
 ```
+
+注意：服务名称中的 `@$USER` 表示以当前用户身份运行服务。例如，如果你的用户名是 `john`，那么服务名称就是 `controlman@john`。
 
 ### 命令行工具
 

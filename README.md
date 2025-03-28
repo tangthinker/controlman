@@ -19,7 +19,7 @@ ControlMan 是一个简单的服务管理器，用于管理后台服务的生命
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/controlman.git
+git clone https://github.com/tangthinker/controlman.git
 cd controlman
 ```
 
@@ -80,7 +80,20 @@ controlman list
 controlman delete myservice
 ```
 
-## 文件结构
+## 项目结构
+
+```
+controlman/
+├── cmd/                    # 命令行工具和守护进程入口
+├── internal/              # 内部包
+├── pkg/                   # 公共包
+├── Makefile              # 构建和安装脚本
+├── controlman.service    # systemd 服务配置文件
+├── go.mod                # Go 模块定义
+└── LICENSE              # MIT 许可证
+```
+
+## 配置文件位置
 
 所有服务相关的文件都存储在 `~/.controlman` 目录下：
 
@@ -93,6 +106,29 @@ controlman delete myservice
 系统日志文件：
 - `/var/log/controlman.log`：守护进程的标准输出日志
 - `/var/log/controlman.error.log`：守护进程的错误日志
+
+## 开发
+
+### 构建
+
+```bash
+# 构建二进制文件
+make build
+
+# 运行测试
+make test
+
+# 清理构建文件
+make clean
+```
+
+### Makefile 目标
+
+- `build`: 构建二进制文件
+- `install`: 安装二进制文件和服务
+- `uninstall`: 卸载二进制文件和服务
+- `test`: 运行测试
+- `clean`: 清理构建文件
 
 ## 注意事项
 

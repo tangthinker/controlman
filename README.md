@@ -15,19 +15,51 @@ ControlMan 是一个简单的服务管理器，用于管理后台服务的生命
 
 ## 安装
 
+### 从源码安装
+
+1. 克隆仓库：
 ```bash
-go install controlman@latest
+git clone https://github.com/yourusername/controlman.git
+cd controlman
+```
+
+2. 编译并安装：
+```bash
+make install
+```
+
+### 卸载
+
+```bash
+make uninstall
 ```
 
 ## 使用方法
 
-1. 首先启动守护进程：
+### 系统服务
+
+ControlMan 守护进程会作为系统服务自动运行。你可以使用以下命令管理守护进程：
 
 ```bash
-controlman -daemon
+# 查看服务状态
+sudo systemctl status controlman
+
+# 启动服务
+sudo systemctl start controlman
+
+# 停止服务
+sudo systemctl stop controlman
+
+# 重启服务
+sudo systemctl restart controlman
+
+# 查看日志
+sudo journalctl -u controlman
 ```
 
-2. 使用命令行工具管理服务：
+### 命令行工具
+
+使用命令行工具管理服务：
 
 ```bash
 # 添加新服务
@@ -56,10 +88,15 @@ controlman delete myservice
   - `service.log`：服务日志文件
   - `service.pid`：服务进程 ID 文件
 
+系统日志文件：
+- `/var/log/controlman.log`：守护进程的标准输出日志
+- `/var/log/controlman.error.log`：守护进程的错误日志
+
 ## 注意事项
 
 1. 服务命令应该是一个完整的命令行，包含所有必要的参数
 2. 服务日志会持续追加到对应的日志文件中
 3. 如果服务崩溃，守护进程会自动尝试重启
 4. 使用 `stop` 命令会强制终止服务进程
-5. 删除服务会同时删除所有相关的配置文件和日志 
+5. 删除服务会同时删除所有相关的配置文件和日志
+6. 守护进程会以当前用户身份运行，确保有适当的权限 

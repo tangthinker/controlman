@@ -57,6 +57,8 @@ sudo systemctl restart controlman
 sudo journalctl -u controlman
 ```
 
+注意：服务以 root 用户身份运行，所有配置文件都存储在 `/root/.controlman` 目录下。
+
 ### 命令行工具
 
 使用命令行工具管理服务：

@@ -94,6 +94,17 @@ func runClient() {
 		}
 		fmt.Printf("Service '%s' started successfully\n", os.Args[2])
 
+	case "restart":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: controlman restart <name>")
+			return
+		}
+		err = c.RestartService(os.Args[2])
+		if err != nil {
+			log.Fatalf("Failed to restart service: %v", err)
+		}
+		fmt.Printf("Service '%s' restarted successfully\n", os.Args[2])
+
 	case "logs":
 		if len(os.Args) < 3 {
 			fmt.Println("Usage: controlman logs <name>")
@@ -162,6 +173,7 @@ Commands:
     add <name> <command>    Add a new service
     stop <name>            Stop a service
     start <name>           Start a service
+    restart <name>         Restart a service
     logs <name>            View service logs
     list                   List all services
     delete <name>          Delete a service

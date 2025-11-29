@@ -107,6 +107,24 @@ func (c *Client) StartService(name string) error {
 	return nil
 }
 
+func (c *Client) RestartService(name string) error {
+	cmd := Command{
+		Action: "restart",
+		Name:   name,
+	}
+
+	resp, err := c.sendCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	if !resp.Success {
+		return fmt.Errorf(resp.Message)
+	}
+
+	return nil
+}
+
 func (c *Client) GetLogs(name string) (string, error) {
 	cmd := Command{
 		Action: "logs",

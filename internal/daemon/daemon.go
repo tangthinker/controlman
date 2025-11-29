@@ -181,6 +181,8 @@ func (d *Daemon) handleCommand(cmd Command) Response {
 		return d.handleStop(cmd)
 	case "start":
 		return d.handleStart(cmd)
+	case "restart":
+		return d.handleRestart(cmd)
 	case "logs":
 		return d.handleLogs(cmd)
 	case "list":
@@ -315,6 +317,50 @@ func (d *Daemon) handleStart(cmd Command) Response {
 	go d.monitorService(s.Name)
 
 	return Response{Success: true, Message: "service started successfully"}
+}
+
+func (d *Daemon) handleRestart(cmd Command) Response {
+	if cmd.Name == "" {
+		return Response{Success: false, Message: "service name is required"}
+	}
+
+	s, err := d.serviceManager.LoadService(cmd.Name)
+	if err != nil {
+		return Response{Success: false, Message: "service not found"}
+	}
+
+	log.Printf("Restarting service: %s", cmd.Name)
+
+	// Update status to restarting
+	s.Status = service.StatusRestarting
+	if err := d.serviceManager.SaveService(s); err != nil {
+		log.Printf("Failed to save restarting status for service %s: %v", s.Name, err)
+	}
+
+	if err := s.Restart(); err != nil {
+		s.Status = service.StatusFailed
+		d.serviceManager.SaveService(s)
+		log.Printf("Failed to restart service %s: %v", cmd.Name, err)
+		return Response{Success: false, Message: fmt.Sprintf("failed to restart service: %v", err)}
+	}
+
+	s.Status = service.StatusRunning
+	if err := d.serviceManager.SaveService(s); err != nil {
+		log.Printf("Failed to save restarted service %s: %v", cmd.Name, err)
+	}
+
+	log.Printf("Service %s restarted successfully with PID %d", cmd.Name, s.PID)
+
+	// Ensure monitor is running
+	d.mu.Lock()
+	_, exists := d.monitors[cmd.Name]
+	d.mu.Unlock()
+
+	if !exists {
+		go d.monitorService(s.Name)
+	}
+
+	return Response{Success: true, Message: "service restarted successfully"}
 }
 
 func (d *Daemon) handleLogs(cmd Command) Response {

@@ -85,6 +85,11 @@ controlman -daemon
     controlman start myserver
     ```
 
+*   **重启服务**：
+    ```bash
+    controlman restart myserver
+    ``` 
+
 *   **删除服务**：
     ```bash
     controlman delete myserver

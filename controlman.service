@@ -8,7 +8,7 @@ User=root
 Group=root
 WorkingDirectory=/root
 Environment=HOME=/root
-ExecStart=/usr/local/bin/controlman -daemon
+ExecStart=/usr/local/bin/controlman -daemon -api -username admin -password admin
 Restart=always
 RestartSec=5
 StandardOutput=journal

@@ -11,6 +11,9 @@ build:
 	go build -o $(BINARY_NAME) cmd/controlman/main.go
 
 install: build
+	# 复制静态文件到/root/.controlman/static
+	sudo mkdir -p /root/.controlman/static
+	sudo cp -r internal/daemon/gin/static/* /root/.controlman/static
 	# 安装二进制文件
 	sudo install -m 755 $(BINARY_NAME) $(INSTALL_DIR)
 	# 安装systemd服务文件
@@ -22,6 +25,8 @@ install: build
 	sudo systemctl start controlman
 
 uninstall:
+	# 删除静态文件
+	sudo rm -rf /root/.controlman/static
 	# 停止并禁用服务
 	sudo systemctl stop controlman
 	sudo systemctl disable controlman

@@ -13,10 +13,15 @@ func RegisterRoutes(router *gin.Engine, daemon *daemon.Daemon, authParams *AuthP
 	authMiddleware := MakeAuthMiddleware(authParams)
 	controller := NewController(daemon)
 
-	router.Static("/assets", "./internal/daemon/gin/static")
-	router.StaticFile("/", "./internal/daemon/gin/static/login.html")
-	router.StaticFile("/dashboard", "./internal/daemon/gin/static/index.html")
-	router.StaticFile("/info", "./internal/daemon/gin/static/info.html")
+	// 如果系统用户为root
+	prefix := "./"
+	if os.Getuid() == 0 {
+		prefix = "/root/.controlman/static"
+	}
+	router.Static("/assets", prefix+"/static")
+	router.StaticFile("/", prefix+"/static/login.html")
+	router.StaticFile("/dashboard", prefix+"/static/index.html")
+	router.StaticFile("/info", prefix+"/static/info.html")
 
 	router.POST("/command", authMiddleware, controller.Command)
 }

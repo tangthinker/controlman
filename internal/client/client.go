@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 )
 
 type Client struct {
@@ -24,7 +26,12 @@ type Response struct {
 }
 
 func NewClient() (*Client, error) {
-	socketPath := "/var/run/controlman/controlman.sock"
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	socketPath := filepath.Join(homeDir, ".controlman", "controlman.sock")
 	conn, err := net.Dial("unix", socketPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to daemon: %v", err)

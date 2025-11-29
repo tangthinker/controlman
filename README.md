@@ -1,118 +1,112 @@
 # ControlMan
 
-ControlMan 是一个简单的服务管理器，用于管理后台服务的生命周期。它包含一个守护进程和一个命令行工具，通过 Unix socket 进行通信。
+ControlMan 是一个轻量级、高性能的后台进程管理工具，采用 Go 语言编写。它基于 Client-Daemon 架构，使用 Pebble 键值数据库进行元数据持久化，并提供健壮的进程监控和自动重启能力。
 
-## 功能特性
+## 核心特性
 
-- 添加服务：自动启动并监控服务
-- 停止服务：强制终止服务进程
-- 查看服务日志
-- 列出所有服务状态
-- 删除服务
-- 自动重启：服务崩溃时每5秒自动重启
-- 日志管理：自动保存服务日志
-- PID 管理：自动记录服务进程 ID
+- **高性能持久化**：使用 [Pebble](https://github.com/cockroachdb/pebble) 数据库存储服务元数据，替代传统的 JSON 文件存储，读写更高效且支持事务。
+- **进程监控**：基于 `syscall` 信号检测进程存活状态，比文件 PID 锁更可靠。
+- **状态管理**：精确维护服务生命周期状态（Running, Stopped, Failed, Restarting 等）。
+- **自动重启**：内置监控机制，当服务非预期退出时自动尝试重启。
+- **日志管理**：自动捕获并追加标准输出/错误到日志文件。
+- **C/S 架构**：通过 Unix Domain Socket 通信，支持多客户端并发操作。
 
 ## 安装
 
-### 从源码安装
+### 前置要求
+
+- Go 1.23+
+- Linux / macOS (支持 Unix Socket 和 Signal 的环境)
+
+### 编译安装
 
 1. 克隆仓库：
-```bash
-git clone https://github.com/tangthinker/controlman.git
-cd controlman
-```
+   ```bash
+   git clone https://github.com/tangthinker/controlman.git
+   cd controlman
+   ```
 
-2. 编译并安装：
-```bash
-make install
-```
+2. 下载依赖并编译安装：
+   ```bash
+   go mod tidy
+   make install
+   ```
 
-### 卸载
+   `make install` 会将二进制文件安装到 `/usr/local/bin`，并配置 systemd 服务（如果支持）。
 
-```bash
-make uninstall
-```
+## 快速开始
 
-## 使用方法
+### 1. 启动守护进程
 
-### 系统服务
-
-ControlMan 守护进程会作为系统服务自动运行。你可以使用以下命令管理守护进程：
+如果是通过 `make install` 安装，守护进程通常由 systemd 管理：
 
 ```bash
-# 查看服务状态
-sudo systemctl status controlman
-
 # 启动服务
 sudo systemctl start controlman
 
-# 停止服务
-sudo systemctl stop controlman
-
-# 重启服务
-sudo systemctl restart controlman
-
-# 查看日志
-sudo journalctl -u controlman
+# 查看状态
+sudo systemctl status controlman
 ```
 
-注意：服务以 root 用户身份运行，所有配置文件都存储在 `/root/.controlman` 目录下。
-
-### 命令行工具
-
-使用命令行工具管理服务：
+或者在当前终端手动启动（用于调试）：
 
 ```bash
-# 添加新服务
-controlman add myservice "python my_script.py"
-
-# 停止服务
-controlman stop myservice
-
-# 查看服务日志
-controlman logs myservice
-
-# 列出所有服务
-controlman list
-
-# 删除服务
-controlman delete myservice
+controlman -daemon
 ```
 
-## 项目结构
+### 2. 管理服务
 
-```
-controlman/
-├── cmd/                    # 命令行工具和守护进程入口
-├── internal/              # 内部包
-├── pkg/                   # 公共包
-├── Makefile              # 构建和安装脚本
-├── controlman.service    # systemd 服务配置文件
-├── go.mod                # Go 模块定义
-└── LICENSE              # MIT 许可证
-```
+使用 `controlman` 命令行工具与守护进程交互：
 
-## 配置文件位置
+*   **添加并启动服务**：
+    ```bash
+    # 语法: controlman add <名称> "<命令>"
+    controlman add myserver "python3 -m http.server 8080"
+    ```
 
-所有服务相关的文件都存储在 `~/.controlman` 目录下：
+*   **查看服务列表**：
+    ```bash
+    controlman list
+    # 输出包含 PID, 状态, 创建时间, 启动时间等信息
+    ```
 
-- `~/.controlman/controlman.sock`：守护进程的 Unix socket 文件
-- `~/.controlman/<service_name>/`：每个服务的独立目录
-  - `config.json`：服务配置文件
-  - `service.log`：服务日志文件
-  - `service.pid`：服务进程 ID 文件
+*   **查看日志**：
+    ```bash
+    controlman logs myserver
+    ```
 
-系统日志文件：
-- `/var/log/controlman.log`：守护进程的标准输出日志
-- `/var/log/controlman.error.log`：守护进程的错误日志
+*   **停止服务**：
+    ```bash
+    controlman stop myserver
+    ```
 
-## 开发
+*   **启动服务**：
+    ```bash
+    controlman start myserver
+    ```
 
-### 构建
+*   **删除服务**：
+    ```bash
+    controlman delete myserver
+    # 注意：这会同时删除服务的日志文件和数据库记录
+    ```
+
+## 数据存储
+
+所有服务相关的数据默认存储在当前用户的 `~/.controlman` 目录下：
+
+*   `data/`：Pebble 数据库目录，存储所有服务的元数据（PID、状态、命令等）。
+*   `<service_name>/`：
+    *   `service.log`：服务的运行日志文件。
+*   `controlman.sock`：守护进程监听的 Unix Socket 文件。
+
+## 开发与构建
 
 ```bash
-# 构建二进制文件
+# 整理依赖
+go mod tidy
+
+# 编译二进制文件
 make build
 
 # 运行测试
@@ -122,19 +116,6 @@ make test
 make clean
 ```
 
-### Makefile 目标
+## 许可证
 
-- `build`: 构建二进制文件
-- `install`: 安装二进制文件和服务
-- `uninstall`: 卸载二进制文件和服务
-- `test`: 运行测试
-- `clean`: 清理构建文件
-
-## 注意事项
-
-1. 服务命令应该是一个完整的命令行，包含所有必要的参数
-2. 服务日志会持续追加到对应的日志文件中
-3. 如果服务崩溃，守护进程会自动尝试重启
-4. 使用 `stop` 命令会强制终止服务进程
-5. 删除服务会同时删除所有相关的配置文件和日志
-6. 守护进程会以当前用户身份运行，确保有适当的权限 
+MIT License

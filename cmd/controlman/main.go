@@ -37,6 +37,9 @@ func runDaemon() {
 	go func() {
 		<-sigChan
 		log.Println("Shutting down daemon...")
+		if err := d.Close(); err != nil {
+			log.Printf("Error closing daemon: %v", err)
+		}
 		os.Exit(0)
 	}()
 

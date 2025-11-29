@@ -6,12 +6,23 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
+type Service struct {
+	Name        string
+	Command     string
+	Status      string
+	PID         int
+	CreatedAt   time.Time
+	LastStarted time.Time
+	LogFile     string
+}
+
 func (s *Service) Start() error {
-	// 构建完整的命令，使用nohup和&
-	cmdStr := fmt.Sprintf("nohup %s > %s 2>&1 & echo $!", s.Command, s.LogFile)
+	// 构建完整的命令，使用nohup和&，并使用 >> 追加日志
+	cmdStr := fmt.Sprintf("nohup %s >> %s 2>&1 & echo $!", s.Command, s.LogFile)
 	cmd := exec.Command("sh", "-c", cmdStr)
 
 	// 执行命令并获取输出
@@ -28,35 +39,29 @@ func (s *Service) Start() error {
 	}
 
 	s.PID = pid
-	s.Status = "running"
 	s.LastStarted = time.Now()
-
-	// 保存PID到文件
-	if err := os.WriteFile(s.PIDFile, []byte(strconv.Itoa(s.PID)), 0644); err != nil {
-		return fmt.Errorf("failed to save PID file: %v", err)
-	}
 
 	return nil
 }
 
 func (s *Service) Stop() error {
 	if s.PID == 0 {
-		return fmt.Errorf("service is not running")
+		return nil
+	}
+
+	// 检查进程是否存在
+	if err := syscall.Kill(s.PID, 0); err != nil {
+		// 进程不存在，直接清理
+		s.PID = 0
+		return nil
 	}
 
 	// 强制终止进程
-	cmd := exec.Command("kill", "-9", strconv.Itoa(s.PID))
-	if err := cmd.Run(); err != nil {
+	if err := syscall.Kill(s.PID, syscall.SIGKILL); err != nil {
 		return fmt.Errorf("failed to stop service: %v", err)
 	}
 
-	s.Status = "stopped"
 	s.PID = 0
-
-	// 删除PID文件
-	if err := os.Remove(s.PIDFile); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove PID file: %v", err)
-	}
 
 	return nil
 }
@@ -81,7 +86,10 @@ func (s *Service) IsRunning() bool {
 		return false
 	}
 
-	// 检查进程是否存在
-	cmd := exec.Command("ps", "-p", strconv.Itoa(s.PID))
-	return cmd.Run() == nil
+	// 使用 syscall.Kill(pid, 0) 检查进程是否存在
+	// 如果返回 nil，说明进程存在且有权限发送信号
+	// 如果返回 EPERM，说明进程存在但无权限（由于我们是管理自己的进程，通常意味着存在）
+	// 如果返回 ESRCH，说明进程不存在
+	err := syscall.Kill(s.PID, 0)
+	return err == nil || err == syscall.EPERM
 }

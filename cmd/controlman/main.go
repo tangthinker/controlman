@@ -148,26 +148,32 @@ func runClient() {
 		if err != nil {
 			log.Fatalf("Failed to list services: %v", err)
 		}
-		if len(services) == 0 {
-			fmt.Println("No services found")
-			return
-		}
-		// 打印表头
-		fmt.Printf("%-20s %-10s %-8s %-10s %-12s %-19s\n", "NAME", "STATUS", "PID", "CPU", "MEMORY", "LAST START")
-		// 打印服务信息
-		for _, s := range services {
-			pid := int(s["pid"].(float64))
-			cpu := s["cpu"].(float64)
-			mem := s["memory"].(float64)
-			fmt.Printf("%-20s %-10s %-8d %-10s %-12s %-19s\n",
-				s["name"],
-				s["status"],
-				pid,
-				fmt.Sprintf("%.1f%%", cpu),
-				formatMemory(mem),
-				formatTime(s["last_start"].(string)))
-		}
+		printServices(services)
 		return
+
+	case "top":
+		// Initial clear screen
+		fmt.Print("\033[2J")
+
+		for {
+			services, err := c.ListServices()
+			if err != nil {
+				// Clear screen to show error clearly
+				fmt.Print("\033[2J\033[H")
+				log.Printf("Failed to list services: %v", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			// Move cursor to top-left (1,1)
+			fmt.Print("\033[H")
+			fmt.Printf("Controlman Top - %s\n\n", time.Now().Format("15:04:05"))
+			printServices(services)
+			// Clear from cursor to end of screen
+			fmt.Print("\033[J")
+
+			time.Sleep(500 * time.Millisecond)
+		}
 
 	case "delete":
 		if len(os.Args) < 3 {
@@ -207,6 +213,28 @@ func formatMemory(bytes float64) string {
 	return fmt.Sprintf("%.1fGB", bytes/1024/1024/1024)
 }
 
+func printServices(services []map[string]interface{}) {
+	if len(services) == 0 {
+		fmt.Println("No services found")
+		return
+	}
+	// 打印表头
+	fmt.Printf("%-20s %-10s %-8s %-10s %-12s %-19s\n", "NAME", "STATUS", "PID", "CPU", "MEMORY", "LAST START")
+	// 打印服务信息
+	for _, s := range services {
+		pid := int(s["pid"].(float64))
+		cpu := s["cpu"].(float64)
+		mem := s["memory"].(float64)
+		fmt.Printf("%-20s %-10s %-8d %-10s %-12s %-19s\n",
+			s["name"],
+			s["status"],
+			pid,
+			fmt.Sprintf("%.1f%%", cpu),
+			formatMemory(mem),
+			formatTime(s["last_start"].(string)))
+	}
+}
+
 func printUsage() {
 	fmt.Println(`Usage: controlman <command> [arguments]
 
@@ -218,6 +246,7 @@ Commands:
     logs <name>            View service logs
     info <name>            View service info
     list                   List all services
+    top                    Monitor services in real-time
     delete <name>          Delete a service
     -daemon               Run in daemon mode`)
 }

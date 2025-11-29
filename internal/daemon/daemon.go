@@ -496,12 +496,23 @@ func (d *Daemon) Run() error {
 func (d *Daemon) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	var cmd Command
-	if err := json.NewDecoder(conn).Decode(&cmd); err != nil {
-		json.NewEncoder(conn).Encode(Response{Success: false, Message: fmt.Sprintf("invalid command: %v", err)})
-		return
-	}
+	decoder := json.NewDecoder(conn)
+	encoder := json.NewEncoder(conn)
 
-	response := d.handleCommand(cmd)
-	json.NewEncoder(conn).Encode(response)
+	for {
+		var cmd Command
+		if err := decoder.Decode(&cmd); err != nil {
+			if err.Error() != "EOF" {
+				// Only log real errors, not clean disconnections
+				log.Printf("Connection error: %v", err)
+			}
+			return
+		}
+
+		response := d.handleCommand(cmd)
+		if err := encoder.Encode(response); err != nil {
+			log.Printf("Failed to send response: %v", err)
+			return
+		}
+	}
 }

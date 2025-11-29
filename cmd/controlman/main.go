@@ -11,23 +11,39 @@ import (
 
 	"github.com/tangthinker/controlman/internal/client"
 	"github.com/tangthinker/controlman/internal/daemon"
+	api "github.com/tangthinker/controlman/internal/daemon/gin"
 )
 
 func main() {
 	daemonMode := flag.Bool("daemon", false, "Run in daemon mode")
+	enableApi := flag.Bool("api", false, "Enable API")
+	username := flag.String("username", "", "Username for authentication")
+	password := flag.String("password", "", "Password for authentication")
 	flag.Parse()
 
 	if *daemonMode {
-		runDaemon()
+		runDaemon(*enableApi, *username, *password)
 	} else {
 		runClient()
 	}
 }
 
-func runDaemon() {
+func runDaemon(enableApi bool, username, password string) {
 	d, err := daemon.NewDaemon()
 	if err != nil {
 		log.Fatalf("Failed to create daemon: %v", err)
+	}
+
+	if enableApi {
+		var authParams *api.AuthParams
+		// controlman -daemon -api -username admin -password admin
+		if username != "" && password != "" {
+			authParams = &api.AuthParams{
+				Username: username,
+				Password: password,
+			}
+		}
+		api.StartServer(d, authParams)
 	}
 
 	// 处理信号

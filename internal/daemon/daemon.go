@@ -173,7 +173,7 @@ func (d *Daemon) monitorService(name string) {
 	}
 }
 
-func (d *Daemon) handleCommand(cmd Command) Response {
+func (d *Daemon) HandleCommand(cmd Command) Response {
 	switch cmd.Action {
 	case "add":
 		return d.handleAdd(cmd)
@@ -509,7 +509,7 @@ func (d *Daemon) handleConnection(conn net.Conn) {
 			return
 		}
 
-		response := d.handleCommand(cmd)
+		response := d.HandleCommand(cmd)
 		if err := encoder.Encode(response); err != nil {
 			log.Printf("Failed to send response: %v", err)
 			return

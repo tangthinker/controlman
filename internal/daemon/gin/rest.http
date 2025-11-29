@@ -1,0 +1,198 @@
+### List all services
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "list"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "data": [
+#         {
+#             "name": "my-service",
+#             "status": "running",
+#             "pid": 12345,
+#             "cpu": 0.5,
+#             "memory": 1024000,
+#             "created_at": "2024-01-01T12:00:00Z",
+#             "last_start": "2024-01-01T12:00:00Z",
+#             "command": "sleep 3600"
+#         }
+#     ]
+# }
+
+### Add a new service
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "add",
+    "name": "my-service",
+    "command": "sleep 3600"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "message": "service added and started successfully"
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service already exists"
+# }
+
+### Start a service
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "start",
+    "name": "my-service"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "message": "service started successfully"
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service not found"
+# }
+
+### Stop a service
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "stop",
+    "name": "my-service"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "message": "service stopped successfully"
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service not found"
+# }
+
+### Restart a service
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "restart",
+    "name": "my-service"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "message": "service restarted successfully"
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service not found"
+# }
+
+### Get service logs
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "logs",
+    "name": "my-service"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "data": "2024-01-01 12:00:00 Service started\n2024-01-01 12:01:00 Processing request\n..."
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service not found"
+# }
+
+### Get service info
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "info",
+    "name": "my-service"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "data": {
+#         "name": "my-service",
+#         "status": "running",
+#         "pid": 12345,
+#         "cpu": 0.5,
+#         "memory": 1024000,
+#         "created_at": "2024-01-01T12:00:00Z",
+#         "last_start": "2024-01-01T12:00:00Z",
+#         "command": "sleep 3600",
+#         "log_file": "/Users/username/.controlman/services/my-service.log"
+#     }
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service not found"
+# }
+
+### Delete a service
+POST http://localhost:1984/command
+Content-Type: application/json
+Username: admin
+Password: 711
+
+{
+    "action": "delete",
+    "name": "my-service"
+}
+
+### Response: 200 OK
+# {
+#     "success": true,
+#     "message": "service deleted successfully"
+# }
+#
+# Error Response: 200 OK
+# {
+#     "success": false,
+#     "message": "service not found"
+# }

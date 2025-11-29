@@ -185,6 +185,8 @@ func (d *Daemon) handleCommand(cmd Command) Response {
 		return d.handleRestart(cmd)
 	case "logs":
 		return d.handleLogs(cmd)
+	case "info":
+		return d.handleInfo(cmd)
 	case "list":
 		return d.handleList()
 	case "delete":
@@ -389,10 +391,13 @@ func (d *Daemon) handleList() Response {
 
 	serviceList := make([]map[string]interface{}, 0)
 	for _, s := range services {
+		cpu, mem, _ := s.GetStats()
 		serviceList = append(serviceList, map[string]interface{}{
 			"name":       s.Name,
 			"status":     s.Status,
 			"pid":        s.PID,
+			"cpu":        cpu,
+			"memory":     mem,
 			"created_at": s.CreatedAt.Format(time.RFC3339),
 			"last_start": s.LastStarted.Format(time.RFC3339),
 			"command":    s.Command,
@@ -431,6 +436,33 @@ func (d *Daemon) handleDelete(cmd Command) Response {
 
 	log.Printf("Service %s deleted successfully", cmd.Name)
 	return Response{Success: true, Message: "service deleted successfully"}
+}
+
+func (d *Daemon) handleInfo(cmd Command) Response {
+	if cmd.Name == "" {
+		return Response{Success: false, Message: "service name is required"}
+	}
+
+	s, err := d.serviceManager.LoadService(cmd.Name)
+	if err != nil {
+		return Response{Success: false, Message: "service not found"}
+	}
+
+	cpu, mem, _ := s.GetStats()
+
+	info := map[string]interface{}{
+		"name":       s.Name,
+		"status":     s.Status,
+		"pid":        s.PID,
+		"cpu":        cpu,
+		"memory":     mem,
+		"created_at": s.CreatedAt.Format(time.RFC3339),
+		"last_start": s.LastStarted.Format(time.RFC3339),
+		"command":    s.Command,
+		"log_file":   s.LogFile,
+	}
+
+	return Response{Success: true, Data: info}
 }
 
 func (d *Daemon) Run() error {

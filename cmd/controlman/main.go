@@ -117,6 +117,32 @@ func runClient() {
 		fmt.Printf("Logs for service '%s':\n%s\n", os.Args[2], logs)
 		return
 
+	case "info":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: controlman info <name>")
+			return
+		}
+		info, err := c.InfoService(os.Args[2])
+		if err != nil {
+			log.Fatalf("Failed to get service info: %v", err)
+		}
+
+		fmt.Printf("Service Information:\n")
+		fmt.Printf("  Name:        %s\n", info["name"])
+		fmt.Printf("  Status:      %s\n", info["status"])
+		fmt.Printf("  PID:         %d\n", int(info["pid"].(float64)))
+		fmt.Printf("  Command:     %s\n", info["command"])
+		fmt.Printf("  Created:     %s\n", formatTime(info["created_at"].(string)))
+		fmt.Printf("  Last Start:  %s\n", formatTime(info["last_start"].(string)))
+		fmt.Printf("  Log File:    %s\n", info["log_file"])
+
+		cpu := info["cpu"].(float64)
+		mem := info["memory"].(float64)
+		fmt.Printf("  CPU Usage:   %.1f%%\n", cpu)
+		fmt.Printf("  Memory:      %s\n", formatMemory(mem))
+
+		return
+
 	case "list":
 		services, err := c.ListServices()
 		if err != nil {
@@ -127,17 +153,19 @@ func runClient() {
 			return
 		}
 		// 打印表头
-		fmt.Printf("%-20s %-10s %-8s %-25s %-19s %-50s\n", "NAME", "STATUS", "PID", "CREATED", "LAST START", "COMMAND")
+		fmt.Printf("%-20s %-10s %-8s %-10s %-12s %-19s\n", "NAME", "STATUS", "PID", "CPU", "MEMORY", "LAST START")
 		// 打印服务信息
 		for _, s := range services {
 			pid := int(s["pid"].(float64))
-			fmt.Printf("%-20s %-10s %-8d %-25s %-19s %-50s\n",
+			cpu := s["cpu"].(float64)
+			mem := s["memory"].(float64)
+			fmt.Printf("%-20s %-10s %-8d %-10s %-12s %-19s\n",
 				s["name"],
 				s["status"],
 				pid,
-				formatTime(s["created_at"].(string)),
-				formatTime(s["last_start"].(string)),
-				s["command"])
+				fmt.Sprintf("%.1f%%", cpu),
+				formatMemory(mem),
+				formatTime(s["last_start"].(string)))
 		}
 		return
 
@@ -166,6 +194,19 @@ func formatTime(timeStr string) string {
 	return t.Format("2006-01-02 15:04:05")
 }
 
+func formatMemory(bytes float64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%.0fB", bytes)
+	}
+	if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1fKB", bytes/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.1fMB", bytes/1024/1024)
+	}
+	return fmt.Sprintf("%.1fGB", bytes/1024/1024/1024)
+}
+
 func printUsage() {
 	fmt.Println(`Usage: controlman <command> [arguments]
 
@@ -175,6 +216,7 @@ Commands:
     start <name>           Start a service
     restart <name>         Restart a service
     logs <name>            View service logs
+    info <name>            View service info
     list                   List all services
     delete <name>          Delete a service
     -daemon               Run in daemon mode`)

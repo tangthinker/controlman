@@ -148,6 +148,29 @@ func (c *Client) GetLogs(name string) (string, error) {
 	return logs, nil
 }
 
+func (c *Client) InfoService(name string) (map[string]interface{}, error) {
+	cmd := Command{
+		Action: "info",
+		Name:   name,
+	}
+
+	resp, err := c.sendCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf(resp.Message)
+	}
+
+	data, ok := resp.Data.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid info data type")
+	}
+
+	return data, nil
+}
+
 func (c *Client) ListServices() ([]map[string]interface{}, error) {
 	cmd := Command{
 		Action: "list",

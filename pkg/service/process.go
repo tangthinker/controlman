@@ -93,3 +93,34 @@ func (s *Service) IsRunning() bool {
 	err := syscall.Kill(s.PID, 0)
 	return err == nil || err == syscall.EPERM
 }
+
+func (s *Service) GetStats() (float64, float64, error) {
+	if s.PID == 0 {
+		return 0, 0, nil
+	}
+	// Check if process is running
+	if !s.IsRunning() {
+		return 0, 0, nil
+	}
+
+	cmd := exec.Command("ps", "-p", strconv.Itoa(s.PID), "-o", "%cpu,rss")
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(lines) < 2 {
+		return 0, 0, fmt.Errorf("unexpected ps output")
+	}
+
+	fields := strings.Fields(lines[1])
+	if len(fields) < 2 {
+		return 0, 0, fmt.Errorf("unexpected ps output format")
+	}
+
+	cpu, _ := strconv.ParseFloat(fields[0], 64)
+	rss, _ := strconv.ParseFloat(fields[1], 64)
+
+	return cpu, rss * 1024, nil // Return bytes
+}

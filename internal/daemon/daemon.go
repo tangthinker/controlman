@@ -76,6 +76,17 @@ func (d *Daemon) Close() error {
 	}
 	d.mu.Unlock()
 
+	services, err := d.serviceManager.ListServices()
+	if err != nil {
+		return err
+	}
+	for _, s := range services {
+		s.Stop()
+		if err := d.serviceManager.SaveService(s); err != nil {
+			log.Printf("Warning: failed to save service status %s: %v", s.Name, err)
+		}
+	}
+
 	return d.serviceManager.Close()
 }
 

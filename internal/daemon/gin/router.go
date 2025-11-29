@@ -1,7 +1,6 @@
 package gin
 
 import (
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,6 +12,12 @@ import (
 func RegisterRoutes(router *gin.Engine, daemon *daemon.Daemon, authParams *AuthParams) {
 	authMiddleware := MakeAuthMiddleware(authParams)
 	controller := NewController(daemon)
+
+	router.Static("/assets", "./internal/daemon/gin/static")
+	router.StaticFile("/", "./internal/daemon/gin/static/login.html")
+	router.StaticFile("/dashboard", "./internal/daemon/gin/static/index.html")
+	router.StaticFile("/info", "./internal/daemon/gin/static/info.html")
+
 	router.POST("/command", authMiddleware, controller.Command)
 }
 
@@ -25,9 +30,9 @@ func StartServer(daemon *daemon.Daemon, authParams *AuthParams) {
 			logFilePath := filepath.Join(homeDir, ".controlman", "controlman-api.log")
 			logFile, openErr := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 			if openErr == nil {
-				defer logFile.Close()
-				gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
-				gin.DefaultErrorWriter = io.MultiWriter(logFile, os.Stderr)
+				// Remove os.Stdout/Stderr to stop writing logs to terminal
+				gin.DefaultWriter = logFile
+				gin.DefaultErrorWriter = logFile
 			} else {
 				log.Printf("Failed to open log file: %v, using stdout only", openErr)
 			}

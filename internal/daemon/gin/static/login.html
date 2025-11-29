@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ControlMan - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/assets/i18n.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen relative">
+    <div class="absolute top-4 right-4 space-x-2">
+        <button id="lang-en" onclick="i18n.setLanguage('en')" class="text-sm hover:text-indigo-600">English</button>
+        <span class="text-gray-300">|</span>
+        <button id="lang-zh" onclick="i18n.setLanguage('zh')" class="text-sm hover:text-indigo-600">中文</button>
+    </div>
+    <div class="w-full max-w-md bg-white rounded-lg shadow-md p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800" data-i18n="app_name">ControlMan</h1>
+            <p class="text-gray-500 mt-2" data-i18n="subtitle">Service Management Interface</p>
+        </div>
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700" data-i18n="username">Username</label>
+                <input type="text" id="username" name="username" required 
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700" data-i18n="password">Password</label>
+                <input type="password" id="password" name="password" required 
+                    class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div id="errorMessage" class="text-red-500 text-sm hidden"></div>
+            <button type="submit" data-i18n="sign_in"
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Sign In
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Update title on load/change
+        function updateTitle() {
+            document.title = i18n.t('login_title');
+        }
+        window.addEventListener('languageChanged', updateTitle);
+        document.addEventListener('DOMContentLoaded', updateTitle);
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Test credentials by trying to list services
+            try {
+                const response = await fetch('/command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Username': username,
+                        'Password': password
+                    },
+                    body: JSON.stringify({ action: 'list' })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.error) {
+                         errorMessage.textContent = data.error || i18n.t('login_failed');
+                         errorMessage.classList.remove('hidden');
+                    } else {
+                        // Save credentials
+                        localStorage.setItem('cm_username', username);
+                        localStorage.setItem('cm_password', password);
+                        window.location.href = '/dashboard';
+                    }
+                } else {
+                    errorMessage.textContent = i18n.t('invalid_credentials');
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMessage.textContent = i18n.t('connection_failed');
+                errorMessage.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

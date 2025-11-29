@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ControlMan - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/assets/i18n.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f3f4f6; }
+        .status-running { color: #10b981; }
+        .status-stopped { color: #ef4444; }
+        .status-failed { color: #dc2626; }
+        .status-starting { color: #f59e0b; }
+        .status-unknown { color: #9ca3af; }
+        
+        /* Modal styling */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+    </style>
+</head>
+<body class="text-gray-800 font-sans">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <h1 class="text-xl font-bold text-indigo-600"><i class="fas fa-network-wired mr-2"></i><span data-i18n="app_name">ControlMan</span></h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 text-sm">
+                        <button id="lang-en" onclick="i18n.setLanguage('en')" class="hover:text-indigo-600">EN</button>
+                        <span class="text-gray-300">|</span>
+                        <button id="lang-zh" onclick="i18n.setLanguage('zh')" class="hover:text-indigo-600">中文</button>
+                    </div>
+                    <span id="userInfo" class="mr-2 text-gray-600"></span>
+                    <button onclick="logout()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats & Actions -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800" data-i18n="services">Services</h2>
+            <button onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow focus:outline-none focus:shadow-outline">
+                <i class="fas fa-plus mr-2"></i> <span data-i18n="add_service">Add Service</span>
+            </button>
+        </div>
+
+        <!-- Services List -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-i18n="name">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-i18n="status">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-i18n="pid">PID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-i18n="command">Command</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-i18n="last_started">Last Started</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" data-i18n="actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="servicesTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be populated by JS -->
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500" data-i18n="loading">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Service Modal -->
+    <div id="addModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold" data-i18n="add_service">Add Service</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeAddModal()">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+                <form id="addServiceForm">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="serviceName" data-i18n="name">Name</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="serviceName" type="text" placeholder="my-service" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="serviceCommand" data-i18n="command">Command</label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="serviceCommand" type="text" placeholder="sleep 3600" required>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button type="button" onclick="closeAddModal()" class="px-4 bg-transparent p-3 rounded-lg text-indigo-500 hover:bg-gray-100 hover:text-indigo-400 mr-2" data-i18n="cancel">Cancel</button>
+                        <button type="submit" class="modal-close px-4 bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400" data-i18n="add">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-4xl mx-auto rounded shadow-lg z-50 overflow-y-auto h-5/6 flex flex-col">
+            <div class="modal-content py-4 text-left px-6 flex-grow flex flex-col h-full">
+                <div class="flex justify-between items-center pb-3 flex-shrink-0">
+                    <p class="text-2xl font-bold"><span data-i18n="service_logs">Service Logs</span>: <span id="logsTitleName"></span></p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeLogsModal()">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+                <div class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto font-mono text-sm flex-grow whitespace-pre-wrap" id="logsContent">
+                    Loading logs...
+                </div>
+                <div class="pt-2 flex justify-end flex-shrink-0">
+                    <button onclick="refreshLogs()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" data-i18n="refresh">Refresh</button>
+                    <button onclick="closeLogsModal()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" data-i18n="close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const username = localStorage.getItem('cm_username');
+        const password = localStorage.getItem('cm_password');
+        let currentLogService = null;
+
+        // Update title
+        function updateTitle() {
+            document.title = i18n.t('dashboard_title');
+        }
+        window.addEventListener('languageChanged', () => {
+            updateTitle();
+            fetchServices(); // Re-render table
+        });
+        document.addEventListener('DOMContentLoaded', updateTitle);
+
+        if (!username || !password) {
+            window.location.href = '/';
+        }
+
+        document.getElementById('userInfo').textContent = username;
+
+        function logout() {
+            localStorage.removeItem('cm_username');
+            localStorage.removeItem('cm_password');
+            window.location.href = '/';
+        }
+
+        async function apiCall(action, data = {}) {
+            const payload = { action, ...data };
+            try {
+                const response = await fetch('/command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Username': username,
+                        'Password': password
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.status === 401) {
+                    logout();
+                    return null;
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                return { success: false, message: i18n.t('network_error') };
+            }
+        }
+
+        async function fetchServices() {
+            const result = await apiCall('list');
+            const tbody = document.getElementById('servicesTableBody');
+            
+            if (result && result.data) {
+                tbody.innerHTML = '';
+                if (result.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">${i18n.t('no_services')}</td></tr>`;
+                    return;
+                }
+                
+                result.data.forEach(service => {
+                    const row = document.createElement('tr');
+                    const statusColor = getStatusColor(service.status);
+                    const icon = getStatusIcon(service.status);
+                    const localizedStatus = i18n.t('status_' + service.status);
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <a href="/info?name=${service.name}" class="text-indigo-600 hover:text-indigo-900 hover:underline">${service.name}</a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${statusColor}">
+                            <i class="${icon} mr-1"></i> ${localizedStatus}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${service.pid || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-xs" title="${service.command}">${service.command}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(service.last_start)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="controlService('${service.name}', 'start')" class="text-green-600 hover:text-green-900 mr-3" title="${i18n.t('confirm_start', {name: ''})}"><i class="fas fa-play"></i></button>
+                            <button onclick="controlService('${service.name}', 'stop')" class="text-red-600 hover:text-red-900 mr-3" title="${i18n.t('confirm_stop', {name: ''})}"><i class="fas fa-stop"></i></button>
+                            <button onclick="controlService('${service.name}', 'restart')" class="text-yellow-600 hover:text-yellow-900 mr-3" title="${i18n.t('confirm_restart', {name: ''})}"><i class="fas fa-redo"></i></button>
+                            <button onclick="viewLogs('${service.name}')" class="text-gray-600 hover:text-gray-900 mr-3" title="${i18n.t('service_logs')}"><i class="fas fa-file-alt"></i></button>
+                            <button onclick="deleteService('${service.name}')" class="text-red-600 hover:text-red-900" title="${i18n.t('confirm_delete', {name: ''})}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${i18n.t('failed_load')}</td></tr>`;
+            }
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'running': return 'status-running';
+                case 'stopped': return 'status-stopped';
+                case 'failed': return 'status-failed';
+                case 'starting': return 'status-starting';
+                case 'stopping': return 'status-starting';
+                case 'restarting': return 'status-starting';
+                default: return 'status-unknown';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'running': return 'fas fa-check-circle';
+                case 'stopped': return 'fas fa-stop-circle';
+                case 'failed': return 'fas fa-exclamation-circle';
+                case 'starting': return 'fas fa-spinner fa-spin';
+                case 'stopping': return 'fas fa-spinner fa-spin';
+                case 'restarting': return 'fas fa-sync fa-spin';
+                default: return 'fas fa-question-circle';
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr.startsWith('0001')) return '-';
+            return new Date(dateStr).toLocaleString();
+        }
+
+        async function controlService(name, action) {
+            let confirmMsg = i18n.t(`confirm_${action}`, {name: name});
+            if (!confirm(confirmMsg)) return;
+            
+            const result = await apiCall(action, { name });
+            if (result && result.success) {
+                fetchServices(); // Refresh list
+            } else {
+                alert(`${i18n.t('unknown_error')}: ${result ? result.message : ''}`);
+            }
+        }
+
+        async function deleteService(name) {
+             let confirmMsg = i18n.t('confirm_delete', {name: name});
+            if (!confirm(confirmMsg)) return;
+            
+            const result = await apiCall('delete', { name });
+            if (result && result.success) {
+                fetchServices();
+            } else {
+                alert(`${i18n.t('unknown_error')}: ${result ? result.message : ''}`);
+            }
+        }
+
+        // Add Service Modal
+        function openAddModal() {
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+        }
+
+        function closeAddModal() {
+            const modal = document.getElementById('addModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
+            document.getElementById('addServiceForm').reset();
+        }
+
+        document.getElementById('addServiceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('serviceName').value;
+            const command = document.getElementById('serviceCommand').value;
+
+            const result = await apiCall('add', { name, command });
+            if (result && result.success) {
+                closeAddModal();
+                fetchServices();
+                // Optional: Show success message?
+            } else {
+                alert(`${i18n.t('failed_add')}: ${result ? result.message : ''}`);
+            }
+        });
+
+        // Logs Modal
+        async function viewLogs(name) {
+            currentLogService = name;
+            // document.getElementById('logsTitle').textContent = `Logs: ${name}`;
+            document.getElementById('logsTitleName').textContent = name;
+            const modal = document.getElementById('logsModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+            await refreshLogs();
+        }
+
+        async function refreshLogs() {
+            if (!currentLogService) return;
+            const logsContent = document.getElementById('logsContent');
+            logsContent.textContent = i18n.t('loading');
+            
+            const result = await apiCall('logs', { name: currentLogService });
+            if (result && result.success) {
+                logsContent.textContent = result.data || i18n.t('no_logs');
+                logsContent.scrollTop = logsContent.scrollHeight; // Auto scroll to bottom
+            } else {
+                logsContent.textContent = i18n.t('failed_logs');
+            }
+        }
+
+        function closeLogsModal() {
+            currentLogService = null;
+            const modal = document.getElementById('logsModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
+        }
+
+        // Initial load and polling
+        fetchServices();
+        setInterval(fetchServices, 5000); // Poll every 5 seconds
+
+    </script>
+</body>
+</html>

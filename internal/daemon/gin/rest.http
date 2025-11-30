@@ -2,7 +2,7 @@
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "list"
@@ -29,7 +29,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "add",
@@ -53,7 +53,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "start",
@@ -76,7 +76,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "stop",
@@ -99,7 +99,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "restart",
@@ -122,7 +122,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "logs",
@@ -145,7 +145,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "info",
@@ -178,7 +178,7 @@ Password: 711
 POST http://localhost:1984/command
 Content-Type: application/json
 Username: admin
-Password: 711
+Password: admin
 
 {
     "action": "delete",

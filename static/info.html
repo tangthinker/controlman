@@ -399,7 +399,7 @@
                 document.getElementById('infoPid').textContent = data.pid || '-';
                 
                 // CPU
-                const cpu = data.cpu !== undefined ? `${(data.cpu * 100).toFixed(2)}%` : '0%';
+                const cpu = data.cpu !== undefined ? `${data.cpu.toFixed(2)}%` : '0%';
                 document.getElementById('infoCpu').textContent = cpu;
 
                 // Memory
@@ -412,7 +412,7 @@
                 // Update Charts
                 const now = new Date().toLocaleTimeString();
                 chartData.labels.push(now);
-                chartData.cpu.push(data.cpu !== undefined ? data.cpu * 100 : 0);
+                chartData.cpu.push(data.cpu !== undefined ? data.cpu : 0);
                 chartData.memory.push(data.memory !== undefined ? data.memory / 1024 / 1024 : 0);
 
                 if (chartData.labels.length > maxDataPoints) {

@@ -37,5 +37,7 @@ uninstall:
 	# 重新加载systemd
 	sudo systemctl daemon-reload
 
+reinstall: uninstall install
+
 clean:
 	rm -f $(BINARY_NAME)

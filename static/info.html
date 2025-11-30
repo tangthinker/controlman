@@ -41,15 +41,15 @@
                         </a>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2 text-sm">
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <div class="flex items-center space-x-1 sm:space-x-2 text-sm">
                         <button id="lang-en" onclick="i18n.setLanguage('en')" class="hover:text-indigo-600">EN</button>
                         <span class="text-gray-300">|</span>
                         <button id="lang-zh" onclick="i18n.setLanguage('zh')" class="hover:text-indigo-600">中文</button>
                     </div>
                     <span id="userInfo" class="mr-2 text-gray-600"></span>
                     <button onclick="logout()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
-                        <i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">Logout</span>
+                        <i class="fas fa-sign-out-alt"></i> <span class="hidden sm:inline" data-i18n="logout">Logout</span>
                     </button>
                 </div>
             </div>
@@ -58,28 +58,28 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <div class="mb-6 flex justify-between items-center">
-            <div class="flex items-center">
-                <a href="/dashboard" class="text-gray-500 hover:text-gray-700 mr-4">
-                    <i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span>
+        <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center w-full sm:w-auto overflow-hidden">
+                <a href="/dashboard" class="text-gray-500 hover:text-gray-700 mr-4 flex-shrink-0">
+                    <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline" data-i18n="back">Back</span>
                 </a>
-                <h2 class="text-2xl font-semibold text-gray-800"><span data-i18n="service_details">Service Details</span>: <span id="serviceNameTitle" class="text-indigo-600"></span></h2>
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 truncate"><span data-i18n="service_details">Service Details</span>: <span id="serviceNameTitle" class="text-indigo-600"></span></h2>
             </div>
-            <div class="flex space-x-2">
-                <button onclick="controlService('start')" class="bg-green-100 text-green-700 hover:bg-green-200 px-4 py-2 rounded-md font-medium focus:outline-none">
-                    <i class="fas fa-play mr-1"></i> <span data-i18n="start">Start</span>
+            <div class="flex space-x-2 w-full sm:w-auto justify-end sm:justify-start">
+                <button onclick="controlService('start')" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 md:px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-play mr-0 md:mr-1"></i> <span class="hidden md:inline" data-i18n="start">Start</span>
                 </button>
-                <button onclick="controlService('stop')" class="bg-red-100 text-red-700 hover:bg-red-200 px-4 py-2 rounded-md font-medium focus:outline-none">
-                    <i class="fas fa-stop mr-1"></i> <span data-i18n="stop">Stop</span>
+                <button onclick="controlService('stop')" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 md:px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-stop mr-0 md:mr-1"></i> <span class="hidden md:inline" data-i18n="stop">Stop</span>
                 </button>
-                <button onclick="controlService('restart')" class="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 px-4 py-2 rounded-md font-medium focus:outline-none">
-                    <i class="fas fa-redo mr-1"></i> <span data-i18n="restart">Restart</span>
+                <button onclick="controlService('restart')" class="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 px-3 md:px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-redo mr-0 md:mr-1"></i> <span class="hidden md:inline" data-i18n="restart">Restart</span>
                 </button>
-                <button onclick="viewLogs()" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-medium focus:outline-none">
-                    <i class="fas fa-file-alt mr-1"></i> <span data-i18n="logs">Logs</span>
+                <button onclick="viewLogs()" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 md:px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-file-alt mr-0 md:mr-1"></i> <span class="hidden md:inline" data-i18n="logs">Logs</span>
                 </button>
-                <button onclick="deleteService()" class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md font-medium focus:outline-none">
-                    <i class="fas fa-trash mr-1"></i> <span data-i18n="delete">Delete</span>
+                <button onclick="deleteService()" class="bg-red-600 text-white hover:bg-red-700 px-3 md:px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-trash mr-0 md:mr-1"></i> <span class="hidden md:inline" data-i18n="delete">Delete</span>
                 </button>
             </div>
         </div>

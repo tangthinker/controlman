@@ -51,7 +51,17 @@ const translations = {
         "status_starting": "Starting",
         "status_stopping": "Stopping",
         "status_restarting": "Restarting",
-        "status_unknown": "Unknown"
+        "status_unknown": "Unknown",
+        "cpu_history": "CPU History",
+        "memory_history": "Memory History",
+        "resource_monitor": "Resource Monitor",
+        "reset_charts": "Reset Charts",
+        "start": "Start",
+        "stop": "Stop",
+        "restart": "Restart",
+        "delete": "Delete",
+        "logs": "Logs",
+        "service_deleted": "Service deleted successfully"
     },
     zh: {
         "app_name": "ControlMan",
@@ -105,7 +115,17 @@ const translations = {
         "status_starting": "启动中",
         "status_stopping": "停止中",
         "status_restarting": "重启中",
-        "status_unknown": "未知"
+        "status_unknown": "未知",
+        "cpu_history": "CPU 历史曲线",
+        "memory_history": "内存历史曲线",
+        "resource_monitor": "资源监控",
+        "reset_charts": "重置图表",
+        "start": "启动",
+        "stop": "停止",
+        "restart": "重启",
+        "delete": "删除",
+        "logs": "日志",
+        "service_deleted": "服务删除成功"
     }
 };
 

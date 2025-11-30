@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="assets/favicon-light.png" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="assets/favicon-dark.png" media="(prefers-color-scheme: dark)">
     <title>ControlMan - Service Info</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/assets/i18n.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -14,6 +17,15 @@
         .status-failed { color: #dc2626; }
         .status-starting { color: #f59e0b; }
         .status-unknown { color: #9ca3af; }
+
+        /* Modal styling */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
     </style>
 </head>
 <body class="text-gray-800 font-sans">
@@ -46,11 +58,30 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <div class="mb-6 flex items-center">
-            <a href="/dashboard" class="text-gray-500 hover:text-gray-700 mr-4">
-                <i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span>
-            </a>
-            <h2 class="text-2xl font-semibold text-gray-800"><span data-i18n="service_details">Service Details</span>: <span id="serviceNameTitle" class="text-indigo-600"></span></h2>
+        <div class="mb-6 flex justify-between items-center">
+            <div class="flex items-center">
+                <a href="/dashboard" class="text-gray-500 hover:text-gray-700 mr-4">
+                    <i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span>
+                </a>
+                <h2 class="text-2xl font-semibold text-gray-800"><span data-i18n="service_details">Service Details</span>: <span id="serviceNameTitle" class="text-indigo-600"></span></h2>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="controlService('start')" class="bg-green-100 text-green-700 hover:bg-green-200 px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-play mr-1"></i> <span data-i18n="start">Start</span>
+                </button>
+                <button onclick="controlService('stop')" class="bg-red-100 text-red-700 hover:bg-red-200 px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-stop mr-1"></i> <span data-i18n="stop">Stop</span>
+                </button>
+                <button onclick="controlService('restart')" class="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-redo mr-1"></i> <span data-i18n="restart">Restart</span>
+                </button>
+                <button onclick="viewLogs()" class="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-file-alt mr-1"></i> <span data-i18n="logs">Logs</span>
+                </button>
+                <button onclick="deleteService()" class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md font-medium focus:outline-none">
+                    <i class="fas fa-trash mr-1"></i> <span data-i18n="delete">Delete</span>
+                </button>
+            </div>
         </div>
 
         <!-- Service Info Card -->
@@ -94,6 +125,54 @@
             </div>
         </div>
 
+        <!-- Charts Header -->
+        <div class="mt-8 flex justify-between items-center">
+            <h2 class="text-lg font-medium text-gray-900" data-i18n="resource_monitor">Resource Monitor</h2>
+            <button onclick="resetCharts()" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <i class="fas fa-sync-alt mr-1"></i> <span data-i18n="reset_charts">Reset Charts</span>
+            </button>
+        </div>
+
+        <!-- Charts -->
+        <div class="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <!-- CPU Chart -->
+            <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4" data-i18n="cpu_history">CPU History</h3>
+                <div class="relative h-64">
+                     <canvas id="cpuChart"></canvas>
+                </div>
+            </div>
+            <!-- Memory Chart -->
+            <div class="bg-white shadow rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4" data-i18n="memory_history">Memory History</h3>
+                <div class="relative h-64">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-4xl mx-auto rounded shadow-lg z-50 overflow-y-auto h-5/6 flex flex-col">
+            <div class="modal-content py-4 text-left px-6 flex-grow flex flex-col h-full">
+                <div class="flex justify-between items-center pb-3 flex-shrink-0">
+                    <p class="text-2xl font-bold"><span data-i18n="service_logs">Service Logs</span>: <span id="logsTitleName"></span></p>
+                    <div class="modal-close cursor-pointer z-50" onclick="closeLogsModal()">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+                <div class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto font-mono text-sm flex-grow whitespace-pre-wrap" id="logsContent">
+                    Loading logs...
+                </div>
+                <div class="pt-2 flex justify-end flex-shrink-0">
+                    <button onclick="refreshLogs()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" data-i18n="refresh">Refresh</button>
+                    <button onclick="closeLogsModal()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" data-i18n="close">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -101,6 +180,7 @@
         const password = localStorage.getItem('cm_password');
         const urlParams = new URLSearchParams(window.location.search);
         const serviceName = urlParams.get('name');
+        let currentLogService = null; // Added for logs modal compatibility
 
         // Update title
         function updateTitle() {
@@ -110,7 +190,10 @@
              updateTitle();
              fetchInfo(); // Refresh to update status text
         });
-        document.addEventListener('DOMContentLoaded', updateTitle);
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTitle();
+            initCharts();
+        });
 
         if (!username || !password) {
             window.location.href = '/';
@@ -127,6 +210,127 @@
             localStorage.removeItem('cm_username');
             localStorage.removeItem('cm_password');
             window.location.href = '/';
+        }
+
+        // Chart variables
+        let cpuChart, memoryChart;
+        const maxDataPoints = 60;
+        const chartData = {
+            labels: [],
+            cpu: [],
+            memory: []
+        };
+
+        function initCharts() {
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: { 
+                        display: true,
+                        ticks: {
+                            display: true,
+                            maxTicksLimit: 6,
+                            maxRotation: 0
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f3f4f6'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                elements: {
+                    point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
+                }
+            };
+
+            const ctxCpu = document.getElementById('cpuChart').getContext('2d');
+            cpuChart = new Chart(ctxCpu, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'CPU %',
+                        data: chartData.cpu,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: { 
+                            ...commonOptions.scales.y,
+                            suggestedMax: 100,
+                            title: { display: true, text: '%' }
+                        }
+                    }
+                }
+            });
+
+            const ctxMem = document.getElementById('memoryChart').getContext('2d');
+            memoryChart = new Chart(ctxMem, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Memory (MiB)',
+                        data: chartData.memory,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: { 
+                            ...commonOptions.scales.y,
+                            title: { display: true, text: 'MiB' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function resetCharts() {
+            chartData.labels = [];
+            chartData.cpu = [];
+            chartData.memory = [];
+            if (cpuChart) {
+                cpuChart.data.labels = chartData.labels;
+                cpuChart.data.datasets[0].data = chartData.cpu;
+                cpuChart.update();
+            }
+            if (memoryChart) {
+                memoryChart.data.labels = chartData.labels;
+                memoryChart.data.datasets[0].data = chartData.memory;
+                memoryChart.update();
+            }
         }
 
         async function apiCall(action, data = {}) {
@@ -205,7 +409,27 @@
                 document.getElementById('infoLastStarted').textContent = new Date(data.last_start).toLocaleString();
                 document.getElementById('infoLogFile').textContent = data.log_file || '-';
 
+                // Update Charts
+                const now = new Date().toLocaleTimeString();
+                chartData.labels.push(now);
+                chartData.cpu.push(data.cpu !== undefined ? data.cpu * 100 : 0);
+                chartData.memory.push(data.memory !== undefined ? data.memory / 1024 / 1024 : 0);
+
+                if (chartData.labels.length > maxDataPoints) {
+                    chartData.labels.shift();
+                    chartData.cpu.shift();
+                    chartData.memory.shift();
+                }
+
+                if (cpuChart) cpuChart.update();
+                if (memoryChart) memoryChart.update();
+
             } else {
+                // If service not found, redirect to dashboard?
+                if (result && result.message === "service not found") {
+                     alert(i18n.t('failed_load'));
+                     window.location.href = '/dashboard';
+                }
                 console.error('Failed to fetch service info');
             }
         }
@@ -220,6 +444,63 @@
                 case 'restarting': return 'fas fa-sync fa-spin';
                 default: return 'fas fa-question-circle';
             }
+        }
+
+        // Control functions
+        async function controlService(action) {
+            let confirmMsg = i18n.t(`confirm_${action}`, {name: serviceName});
+            if (!confirm(confirmMsg)) return;
+            
+            const result = await apiCall(action, { name: serviceName });
+            if (result && result.success) {
+                fetchInfo(); // Refresh info immediately
+            } else {
+                alert(`${i18n.t('unknown_error')}: ${result ? result.message : ''}`);
+            }
+        }
+
+        async function deleteService() {
+             let confirmMsg = i18n.t('confirm_delete', {name: serviceName});
+            if (!confirm(confirmMsg)) return;
+            
+            const result = await apiCall('delete', { name: serviceName });
+            if (result && result.success) {
+                alert(i18n.t('service_deleted') || "Service deleted"); // Fallback message if i18n key missing
+                window.location.href = '/dashboard';
+            } else {
+                alert(`${i18n.t('unknown_error')}: ${result ? result.message : ''}`);
+            }
+        }
+
+        // Logs Modal functions
+        async function viewLogs() {
+            currentLogService = serviceName;
+            document.getElementById('logsTitleName').textContent = serviceName;
+            const modal = document.getElementById('logsModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+            await refreshLogs();
+        }
+
+        async function refreshLogs() {
+            if (!currentLogService) return;
+            const logsContent = document.getElementById('logsContent');
+            logsContent.textContent = i18n.t('loading');
+            
+            const result = await apiCall('logs', { name: currentLogService });
+            if (result && result.success) {
+                logsContent.textContent = result.data || i18n.t('no_logs');
+                logsContent.scrollTop = logsContent.scrollHeight; // Auto scroll to bottom
+            } else {
+                logsContent.textContent = i18n.t('failed_logs');
+            }
+        }
+
+        function closeLogsModal() {
+            currentLogService = null;
+            const modal = document.getElementById('logsModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
         }
 
         // Initial load and polling

@@ -16,7 +16,7 @@ func RegisterRoutes(router *gin.Engine, daemon *daemon.Daemon, authParams *AuthP
 	// 如果系统用户为root
 	prefix := "./"
 	if os.Getuid() == 0 {
-		prefix = "/root/.controlman/static"
+		prefix = "/root/.controlman"
 	}
 	router.Static("/assets", prefix+"/static")
 	router.StaticFile("/", prefix+"/static/login.html")

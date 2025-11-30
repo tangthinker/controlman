@@ -13,7 +13,7 @@ build:
 install: build
 	# 复制静态文件到/root/.controlman/static
 	sudo mkdir -p /root/.controlman/static
-	sudo cp -r internal/daemon/gin/static/* /root/.controlman/static
+	sudo cp -r static/* /root/.controlman/static
 	# 安装二进制文件
 	sudo install -m 755 $(BINARY_NAME) $(INSTALL_DIR)
 	# 安装systemd服务文件

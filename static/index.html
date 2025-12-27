@@ -10,6 +10,10 @@
     <script src="/assets/i18n.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'SourceCodePro';
+            src: url('/assets/font/SourceCodePro-Regular.ttf') format('truetype');
+        }
         body { background-color: #f3f4f6; }
         .status-running { color: #10b981; }
         .status-stopped { color: #ef4444; }
@@ -24,6 +28,18 @@
         body.modal-active {
             overflow-x: hidden;
             overflow-y: visible !important;
+        }
+        #logsContent {
+            font-family: 'SourceCodePro', monospace;
+        }
+
+        /* Fullscreen modal styling */
+        .modal-container.fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
         }
     </style>
 </head>
@@ -124,16 +140,20 @@
             <div class="modal-content py-4 text-left px-6 flex-grow flex flex-col h-full">
                 <div class="flex justify-between items-center pb-3 flex-shrink-0">
                     <p class="text-2xl font-bold"><span data-i18n="service_logs">Service Logs</span>: <span id="logsTitleName"></span></p>
-                    <div class="modal-close cursor-pointer z-50" onclick="closeLogsModal()">
-                        <i class="fas fa-times"></i>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="refreshLogs()" class="text-gray-500 hover:text-blue-600 focus:outline-none" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button onclick="toggleLogsFullscreen()" class="text-gray-500 hover:text-gray-700 focus:outline-none" title="Toggle Fullscreen">
+                            <i id="fullscreenIcon" class="fas fa-expand"></i>
+                        </button>
+                        <div class="modal-close cursor-pointer z-50 text-gray-500 hover:text-red-600" onclick="closeLogsModal()">
+                            <i class="fas fa-times"></i>
+                        </div>
                     </div>
                 </div>
-                <div class="bg-gray-900 text-gray-100 p-4 rounded overflow-auto font-mono text-sm flex-grow whitespace-pre-wrap" id="logsContent">
+                <div class="bg-black text-gray-100 p-4 rounded overflow-auto font-mono text-sm flex-grow whitespace-pre-wrap" id="logsContent">
                     Loading logs...
-                </div>
-                <div class="pt-2 flex justify-end flex-shrink-0">
-                    <button onclick="refreshLogs()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2" data-i18n="refresh">Refresh</button>
-                    <button onclick="closeLogsModal()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" data-i18n="close">Close</button>
                 </div>
             </div>
         </div>
@@ -347,6 +367,23 @@
             const modal = document.getElementById('logsModal');
             modal.classList.add('opacity-0', 'pointer-events-none');
             document.body.classList.remove('modal-active');
+
+            // Reset fullscreen if closed
+            const container = modal.querySelector('.modal-container');
+            container.classList.remove('fullscreen');
+            document.getElementById('fullscreenIcon').className = 'fas fa-expand';
+        }
+
+        function toggleLogsFullscreen() {
+            const container = document.querySelector('#logsModal .modal-container');
+            const icon = document.getElementById('fullscreenIcon');
+            const isFullscreen = container.classList.toggle('fullscreen');
+            
+            if (isFullscreen) {
+                icon.className = 'fas fa-compress';
+            } else {
+                icon.className = 'fas fa-expand';
+            }
         }
 
         // Initial load and polling

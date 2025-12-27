@@ -128,13 +128,18 @@
         <!-- Charts Header -->
         <div class="mt-8 flex justify-between items-center">
             <h2 class="text-lg font-medium text-gray-900" data-i18n="resource_monitor">Resource Monitor</h2>
-            <button onclick="resetCharts()" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <i class="fas fa-sync-alt mr-1"></i> <span data-i18n="reset_charts">Reset Charts</span>
-            </button>
+            <div class="flex space-x-2">
+                <button id="toggleMonitorBtn" onclick="toggleMonitor()" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <i id="toggleIcon" class="fas fa-eye mr-1"></i> <span id="toggleText" data-i18n="show_monitor">Show Monitor</span>
+                </button>
+                <button onclick="resetCharts()" class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <i class="fas fa-sync-alt mr-1"></i> <span data-i18n="reset_charts">Reset Charts</span>
+                </button>
+            </div>
         </div>
 
         <!-- Charts -->
-        <div class="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div id="chartsContainer" class="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2 hidden">
             <!-- CPU Chart -->
             <div class="bg-white shadow rounded-lg p-4">
                 <h3 class="text-lg font-medium text-gray-900 mb-4" data-i18n="cpu_history">CPU History</h3>
@@ -243,7 +248,8 @@
                         }
                     },
                     y: { 
-                        beginAtZero: true,
+                        beginAtZero: false,
+                        grace: '5%',
                         grid: {
                             color: '#f3f4f6'
                         }
@@ -282,7 +288,6 @@
                         ...commonOptions.scales,
                         y: { 
                             ...commonOptions.scales.y,
-                            suggestedMax: 100,
                             title: { display: true, text: '%' }
                         }
                     }
@@ -315,6 +320,37 @@
                     }
                 }
             });
+        }
+
+        function toggleMonitor() {
+            const container = document.getElementById('chartsContainer');
+            const btnText = document.getElementById('toggleText');
+            const icon = document.getElementById('toggleIcon');
+            const isHidden = container.classList.contains('hidden');
+            
+            if (isHidden) {
+                container.classList.remove('hidden');
+                btnText.setAttribute('data-i18n', 'hide_monitor');
+                btnText.textContent = i18n.t('hide_monitor');
+                icon.className = 'fas fa-eye-slash mr-1';
+                
+                // Trigger update and start polling when shown
+                fetchInfo();
+                if (!window.pollingInterval) {
+                    window.pollingInterval = setInterval(fetchInfo, 1000);
+                }
+            } else {
+                container.classList.add('hidden');
+                btnText.setAttribute('data-i18n', 'show_monitor');
+                btnText.textContent = i18n.t('show_monitor');
+                icon.className = 'fas fa-eye mr-1';
+                
+                // Stop polling when hidden
+                if (window.pollingInterval) {
+                    clearInterval(window.pollingInterval);
+                    window.pollingInterval = null;
+                }
+            }
         }
 
         function resetCharts() {
@@ -385,29 +421,42 @@
             if (result && result.success) {
                 const data = result.data;
                 
-                // Update Status Badge
+                // Update Status Badge only if changed
                 const statusBadge = document.getElementById('statusBadge');
-                // Remove existing i18n attr to avoid overwrite by main apply loop if it runs again
-                statusBadge.removeAttribute('data-i18n');
-                
-                statusBadge.className = `px-3 py-1 rounded-full text-sm font-bold ${getStatusColorClass(data.status)}`;
                 const localizedStatus = i18n.t('status_' + data.status);
-                statusBadge.innerHTML = `<i class="${getStatusIcon(data.status)} mr-1"></i> ${localizedStatus}`;
+                const newStatusHTML = `<i class="${getStatusIcon(data.status)} mr-1"></i> ${localizedStatus}`;
+                const newClassName = `px-3 py-1 rounded-full text-sm font-bold ${getStatusColorClass(data.status)}`;
+                
+                if (statusBadge.innerHTML !== newStatusHTML) {
+                    statusBadge.removeAttribute('data-i18n');
+                    statusBadge.innerHTML = newStatusHTML;
+                }
+                if (statusBadge.className !== newClassName) {
+                    statusBadge.className = newClassName;
+                }
 
-                // Update Fields
-                document.getElementById('infoCommand').textContent = data.command;
-                document.getElementById('infoPid').textContent = data.pid || '-';
+                // Helper to update text content only if changed
+                const updateField = (id, newValue) => {
+                    const el = document.getElementById(id);
+                    if (el && el.textContent !== String(newValue)) {
+                        el.textContent = newValue;
+                    }
+                };
+
+                updateField('infoCommand', data.command);
+                updateField('infoPid', data.pid || '-');
                 
                 // CPU
                 const cpu = data.cpu !== undefined ? `${data.cpu.toFixed(2)}%` : '0%';
-                document.getElementById('infoCpu').textContent = cpu;
+                updateField('infoCpu', cpu);
 
                 // Memory
                 const mem = data.memory !== undefined ? formatBytes(data.memory) : '-';
-                document.getElementById('infoMem').textContent = mem;
+                updateField('infoMem', mem);
 
-                document.getElementById('infoLastStarted').textContent = new Date(data.last_start).toLocaleString();
-                document.getElementById('infoLogFile').textContent = data.log_file || '-';
+                const lastStarted = new Date(data.last_start).toLocaleString();
+                updateField('infoLastStarted', lastStarted);
+                updateField('infoLogFile', data.log_file || '-');
 
                 // Update Charts
                 const now = new Date().toLocaleTimeString();
@@ -503,10 +552,9 @@
             document.body.classList.remove('modal-active');
         }
 
-        // Initial load and polling
+        // Initial load
         fetchInfo();
-        setInterval(fetchInfo, 1000); // Refresh every 1 second
-
+        // Polling is only started when monitor is shown
     </script>
 </body>
 </html>
